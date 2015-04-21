@@ -31,6 +31,7 @@ public class Main {
         client.setMongoClient(new MongoClient(mongoReplicaSet));
         client.setMongoDatabase("test");
         client.setMessageCollection("messages");
+        client.setMessageArchive("messagearchive");
         client.setChatObserver(new ChatObserverThread(client));
         log.info("{} joined the chat", client.getUsername());
 

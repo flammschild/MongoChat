@@ -19,4 +19,4 @@ Setting up a mongodb replication cluster for testing purposes on a Windows machi
    rs.initiate(rsconf)
    rs.add("192.168.200.131:27018")
    rs.add("192.168.200.131:27019")
-   db.createCollection("messages", {capped:true, autoIndexId:false, size:100000, max:100})
+   db.createCollection("messages", {capped:true, autoIndexId:false, size:100000, max:20})

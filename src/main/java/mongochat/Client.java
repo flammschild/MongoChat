@@ -18,10 +18,13 @@ import com.mongodb.client.MongoDatabase;
 
 public class Client implements Runnable {
 
+  private static final long MAX_COLLECTION_LENGTH = 20; // Represents the number of actively
+                                                        // displayed messages
   private ChatObserverThread chatObserver;
   private Scanner inputScanner;
   private PrintWriter outputWriter;
   private MongoCollection<Document> messageCollection;
+  private MongoCollection<Document> messageArchive;
   private MongoClient mongoClient;
   private MongoDatabase mongoDatabase;
   private Socket socket;
@@ -104,6 +107,10 @@ public class Client implements Runnable {
     return this.username;
   }
 
+  public MongoCollection<Document> getMessageArchive() {
+    return messageArchive;
+  }
+
   public void setChatObserver(ChatObserverThread chatObserverThread) {
     this.chatObserver = chatObserverThread;
 
@@ -115,6 +122,10 @@ public class Client implements Runnable {
 
   public void setMessageCollection(String collectionName) {
     messageCollection = getMongoDatabase().getCollection(collectionName);
+  }
+
+  public void setMessageArchive(String archiveName) {
+    messageArchive = getMongoDatabase().getCollection(archiveName);
   }
 
   public void setMongoClient(MongoClient mongoClient) {
@@ -136,9 +147,19 @@ public class Client implements Runnable {
   }
 
   public void sendMessage(Message message) {
-    Document document = Document.parse(message.toJson());
-    getMessageCollection().insertOne(document);
-    log.debug("Message sent: {}", document.toJson());
+    // Archive messages, that would otherwise be silently overwritten in a capped collection.
+    if (getMessageCollection().count() == MAX_COLLECTION_LENGTH) {
+      archiveOldestMessage(getMessageCollection());
+    }
+    Document doc = Document.parse(message.toJson());
+    getMessageCollection().insertOne(doc);
+    log.debug("Message sent: {}", doc.toJson());
+  }
+
+  public void archiveOldestMessage(MongoCollection<Document> messageCollection) {
+    Document doc = getMessageCollection().find().first();
+    getMessageArchive().insertOne(doc);
+    log.debug("Message archived: {}", doc.toJson());
   }
 
   public void interrupt() {
