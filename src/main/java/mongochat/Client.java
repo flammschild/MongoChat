@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -66,6 +67,16 @@ public class Client implements Runnable {
             String formerName = getUsername();
             setUsername(matcher.group(2));
             log.info("{} is now called {}", formerName, getUsername());
+            continue;
+          }
+          // "!archive" shows all archived Messages
+          if (matcher.group(1).equals("archive")) {
+            getOutputWriter().println("### ARCHIVE START ###");
+            for (Document doc : getMessageArchive().find()) {
+              Message message = (new Gson()).fromJson(doc.toJson(), Message.class);
+              getOutputWriter().println(message);
+            }
+            getOutputWriter().println("### ARCHIVE END ###");
             continue;
           }
         }
