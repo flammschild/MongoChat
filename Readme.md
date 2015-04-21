@@ -5,6 +5,7 @@ Preparation
 
 Setting up a mongodb replication cluster for testing purposes on a Windows machine (for other operating systems change the dbpath accordingly) and create the MessageCollection. 
 
+````bat
    mkdir \data\rs0-0
    mkdir \data\rs0-1
    mkdir \data\rs0-2
@@ -20,3 +21,4 @@ Setting up a mongodb replication cluster for testing purposes on a Windows machi
    rs.add("192.168.200.131:27018")
    rs.add("192.168.200.131:27019")
    db.createCollection("messages", {capped:true, autoIndexId:false, size:100000, max:20})
+````
