@@ -6,11 +6,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.mongodb.CursorType;
-import com.mongodb.MongoCursorNotFoundException;
 import com.mongodb.MongoInterruptedException;
 import com.mongodb.MongoSocketOpenException;
-import com.mongodb.MongoSocketReadException;
-import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 
@@ -40,32 +37,41 @@ public class ChatObserverThread implements Runnable {
           Message message = (new Gson()).fromJson(nextMessage.toJson(), Message.class);
           client.getOutputWriter().println(message);
         }
-      } catch (MongoSocketReadException e) {
-        log.warn("Message stream interrupted, trying to reload cursor");
-        cursor.close();
+      } catch (Exception e) {
+        client.getOutputWriter().println(
+            "## We encountered a network issue: You may experience a slight delay. ##");
+        log.warn("Message stream interrupted, trying to reload cursor because:" + e.getMessage());
+        closeCursor();
+        while (client.getMongoClient().getReplicaSetStatus().getMaster() == null) {
+          log.info("No master present. Will retry in 2 sec.");
+          try {
+            Thread.sleep(2000);
+          } catch (InterruptedException e1) {
+            e1.printStackTrace();
+          }
+        }
         cursor = getTailableCursor(client.getMessageCollection());
-      } catch (MongoSocketOpenException e) {
-        log.error("Failed to open socket for cursor");
-        e.printStackTrace();
-      } catch (MongoTimeoutException e) {
-        log.error("There is no primary server in the replication set. Cannot connect.");
-        e.printStackTrace();
-      } catch (MongoCursorNotFoundException IllegalStateException) {
-        // TODO Find a way to avoid this exception
-        log.warn("Tried to read a cursor, that was already gone.");
-      } catch (MongoInterruptedException e) {
-        log.warn("Cursor was forcefully removed from the pool.");
+        client.getOutputWriter().println("## Hooray! Network issue solved. ##");
       }
     }
-    cursor.close();
+    closeCursor();
+  }
+
+  private void closeCursor() {
+    try {
+      cursor.close();
+    } catch (MongoSocketOpenException | MongoInterruptedException | IllegalStateException e) {
+      // TODO: Ignore for now that socket cannot be reopened after cursor was closed and that
+      // connection was interrupted. Should find way to close cursor more gracefully.
+    }
   }
 
   public void interrupt() {
-    cursor.close();
     thread.interrupt();
   }
 
   private MongoCursor<Document> getTailableCursor(MongoCollection<Document> collection) {
+    // primaryPreferred provides a “read-only mode” during a failover.
     return collection.find().cursorType(CursorType.Tailable).iterator();
   }
 }

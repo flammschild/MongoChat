@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mongodb.MongoClient;
+import com.mongodb.ReadPreference;
 import com.mongodb.ServerAddress;
+import com.mongodb.WriteConcern;
 
 public class Main {
 
@@ -23,7 +25,7 @@ public class Main {
 
     Logger log = LoggerFactory.getLogger(Main.class);
 
-    // Read configuration for mongo replica set from config file. 
+    // Read configuration for mongodb replica set from config file. 
     URI configFileUri = null;
     try {
       configFileUri = Main.class.getResource("/replica_config.json").toURI();
@@ -43,7 +45,14 @@ public class Main {
       try {
         // Create a new Client for each accepted connection on the ServerSocket.
         Client client = new Client(serverSocket.accept());
-        client.setMongoClient(new MongoClient(mongoReplicaSet));
+        
+        // Configure connection to the replication set.
+        MongoClient mongoClient = new MongoClient(mongoReplicaSet);
+        mongoClient.setReadPreference(ReadPreference.primaryPreferred());
+        mongoClient.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
+        
+        // Configure client to participate in chat.
+        client.setMongoClient(mongoClient);
         client.setMongoDatabase("test");
         client.setMessageCollection("messages");
         client.setMessageArchive("messagearchive");
