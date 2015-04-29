@@ -1,4 +1,4 @@
-Whats this?
+What's this?
 ===========
 
 This is a mock project that I use for my learning by doing experiments with [mongoDB](http://www.mongodb.org/) and the [Java mongoDB driver](http://docs.mongodb.org/ecosystem/drivers/java/).
@@ -41,7 +41,7 @@ The following test scenario uses three mongoDB instances on a Windows 7 virtual 
    mongod --port 27020 --dbpath ~/data/rs0-3 --replSet rs0 --smallfiles --oplogSize 128
 ````
 
-4) Open a connection to the mongoDB instance on the linux client and initialize the replication set. For testing purposes the linux instance, if available, will always be prefered as master.
+4) Open a connection to the mongoDB instance on the linux client and initialize the replication set. For testing purposes the linux instance (if available) will always be prefered as primary.
  
 ````bash
    mongo --port 27020
@@ -81,7 +81,7 @@ The following test scenario uses three mongoDB instances on a Windows 7 virtual 
 Usage
 -----
 
-1) Install telnet client for [windows](https://technet.microsoft.com/en-us/library/cc771275%28v=ws.10%29.aspx) or [android](https://play.google.com/store/apps/details?id=com.telnet)
+1) Install telnet client for [windows](https://technet.microsoft.com/en-us/library/cc771275%28v=ws.10%29.aspx) or [android](https://play.google.com/store/apps/details?id=com.telnet). On ubuntu the package *telnet* is already installed by default.
 2) Run the Main method of the MongoChat application
 3) Use your telnet client to connect to the port 4321
 
