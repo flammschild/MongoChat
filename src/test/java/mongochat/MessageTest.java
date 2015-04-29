@@ -1,11 +1,9 @@
 package mongochat;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
 import java.util.regex.Pattern;
-
-import mongochat.Message;
 
 import org.junit.Test;
 

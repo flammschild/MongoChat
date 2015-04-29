@@ -19,10 +19,12 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadPreference;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -96,10 +98,26 @@ public class Client implements Runnable {
             sendSystemMessage(formerName + " is now called " + username);
             continue;
           }
-          // "!archive" shows all archived Messages
-          if (matcher.group(1).equals("archive")) {
+          // "!archive <hours> <messages>" shows the number of archived Messages from the last
+          // hours.
+
+          if (matcher.group(1).equals("archive") && !matcher.group(2).isEmpty()) {
+            BasicDBObject query = new BasicDBObject();
+            String[] archiveParameter = matcher.group(2).split(" ");
+
+            Integer hours = Integer.parseInt(archiveParameter[0]);
+            ChatDate date = new ChatDate();
+            date.minusHours(hours);
+            query.put("date", new BasicDBObject("$gte", date.toString()));
+            FindIterable<Document> result = messageArchive.find(query);
+
+            if (archiveParameter.length > 1) {
+              Integer messageLimit = Integer.parseInt(archiveParameter[1]);
+              result.limit(messageLimit);
+            }
+
             outputWriter.println("### ARCHIVE START ###");
-            for (Document messageDocument : messageArchive.find()) {
+            for (Document messageDocument : result) {
               outputWriter.println(new Message(messageDocument));
             }
             outputWriter.println("### ARCHIVE END ###");

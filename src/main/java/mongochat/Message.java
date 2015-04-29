@@ -1,10 +1,6 @@
 package mongochat;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 import org.bson.Document;
 
@@ -18,7 +14,7 @@ public class Message {
 
   public Message(String text, String userName) {
     this.text = text;
-    this.date = new Date();
+    this.date = new ChatDate().toDate();
     this.userName = userName;
   }
 
@@ -30,13 +26,9 @@ public class Message {
 
   public Message(Document messageDocument) {
     text = messageDocument.getString("text");
+    date = new ChatDate(messageDocument.getString("date")).toDate();
     userName = messageDocument.getString("userName");
-    SimpleDateFormat df = new SimpleDateFormat("MMM dd, yyyy HH:mm:ss aaa"); // Apr 28, 2015 11:52:17 PM
-    try {
-      date = df.parse(messageDocument.getString("date"));
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
+
   }
 
   public Date getDate() {
@@ -62,8 +54,7 @@ public class Message {
   @Override
   public String toString() {
     // Format a Message in a way that can be displayed to the user.
-    DateFormat df =
-        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.GERMAN);
-    return String.format("%s (%s): %s", getUserName(), df.format(getDate()), getText());
+    return String.format("%s (%s): %s", getUserName(), (new ChatDate(getDate())).toShortString(),
+        getText());
   }
 }

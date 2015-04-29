@@ -42,7 +42,7 @@ public class ChatObserverThread implements Runnable {
         waitForMaster(); // During a failover wait until a new Master (Primary) is elected.
         cursor = getTailableCursor(client.getMessageCollection());
         client.receiveSystemMessage("Hooray! Network issue solved.");
-      } catch (MongoInterruptedException e){
+      } catch (MongoInterruptedException | IllegalStateException e){
         // Ignore.
       }
     }
