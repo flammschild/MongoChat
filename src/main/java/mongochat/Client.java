@@ -107,19 +107,21 @@ public class Client implements Runnable {
       if (scanner != null && scanner.hasNextLine()) {
 
         String input = scanner.nextLine();
-        // Check if user input is a chat command, like "!<command> <parameter>".
-        Matcher matcher = Pattern.compile("^!([a-z]+) ?(.*)").matcher(input);
+        // Check if user input is a chat command, like "!<command> [<parameter>]".
+        Matcher commandMatcher =
+            Pattern.compile("^!(?<command>[a-z]+) ?(?<parameter>.*)").matcher(input);
 
-        if (matcher.find()) {
+        if (commandMatcher.find()) {
           // "!quit" makes the client leave the chat.
-          if (matcher.group(1).equals("quit")) {
+          if (commandMatcher.group("command").equals("quit")) {
             sendSystemMessage(username + " left the Chat");
             break;
           }
           // "!name newName" renames the client.
-          if (matcher.group(1).equals("name") && !matcher.group(2).isEmpty()) {
+          if (commandMatcher.group("command").equals("name")
+              && !commandMatcher.group("parameter").isEmpty()) {
             String formerName = username;
-            username = matcher.group(2);
+            username = commandMatcher.group("parameter");
             sendSystemMessage(formerName + " is now called " + username);
             continue;
           }
@@ -129,27 +131,31 @@ public class Client implements Runnable {
            * 
            * The optional second parameter limits the number of displayed messages.
            */
-          if (matcher.group(1).equals("archive") && !matcher.group(2).isEmpty()) {
+          if (commandMatcher.group("command").equals("archive")
+              && !commandMatcher.group("parameter").isEmpty()) {
             BasicDBObject query = new BasicDBObject();
-            String[] archiveParameter = matcher.group(2).split(" ");
+            // Only accept given parameters, if they are proper integers.
+            Matcher parameterMatcher =
+                Pattern.compile("^(?<hours>[0-9]+) ?(?<limit>[0-9]*)").matcher(
+                    commandMatcher.group("parameter"));
 
-            Integer hours = Integer.parseInt(archiveParameter[0]);
-            ChatDate date = new ChatDate();
-            date.minusHours(hours);
-            query.put("date", new BasicDBObject("$gte", date.toString()));
-            FindIterable<Document> result = messageArchive.find(query);
+            if (parameterMatcher.find()) {
+              ChatDate date = new ChatDate();
+              date.minusHours(Integer.parseInt(parameterMatcher.group("hours")));
+              query.put("date", new BasicDBObject("$gte", date.toString()));
+              FindIterable<Document> result = messageArchive.find(query);
 
-            if (archiveParameter.length > 1) {
-              Integer messageLimit = Integer.parseInt(archiveParameter[1]);
-              result.limit(messageLimit);
+              if (!parameterMatcher.group("limit").isEmpty()) {
+                result.limit(Integer.parseInt(parameterMatcher.group("limit")));
+              }
+              
+              outputWriter.println("### ARCHIVE START ###");
+              for (Document messageDocument : result) {
+                outputWriter.println(new Message(messageDocument));
+              }
+              outputWriter.println("### ARCHIVE END ###");
+              continue;
             }
-
-            outputWriter.println("### ARCHIVE START ###");
-            for (Document messageDocument : result) {
-              outputWriter.println(new Message(messageDocument));
-            }
-            outputWriter.println("### ARCHIVE END ###");
-            continue;
           }
         }
         sendMessage(new Message(input, username));
@@ -249,14 +255,14 @@ public class Client implements Runnable {
     try {
       configFileUri = Main.class.getResource(configFilePath).toURI();
       jsonString = String.join("", Files.readAllLines(Paths.get(configFileUri)));
-      
+
     } catch (URISyntaxException e) {
       log.error("URI of replica set config file is malformed.");
       e.printStackTrace();
-      
+
     } catch (NullPointerException e) {
       log.error("Cannot create URI of replica set config file. Does it exist?");
-      
+
     } catch (IOException e) {
       log.error("Cannot read replica set from config file. Do you have write access?");
       e.printStackTrace();
